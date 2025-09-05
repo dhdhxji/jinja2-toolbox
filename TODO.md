@@ -1,19 +1,20 @@
 ## Features
 | Feature                                      | Supported |
 | -------------------------------------------- | --------- |
-| json                                         | ❌         |
+| json                                         | ✅         |
 | yaml                                         | ❌         |
 | toml                                         | ❌         |
 | ini                                          | ❌         |
-| Template files                               | ❌         |
+| Template files                               | ✅         |
 | Stdin templates                              | ❌         |
-| Data files                                   | ❌         |
+| Data files                                   | ✅         |
 | Stdin data                                   | ❌         |
-| Output to file                               | ❌         |
+| Output to file                               | ✅         |
 | Output to stdin                              | ❌         |
 | All of jinja2 env configs exposed to the CLI | ❌         |
 | Custom filters                               | ❌         |
 | Data access helpers (`.parent`, etc.)        | ❌         |
 | Readme                                       | ❌         |
 | Documentation                                | ❌         |
+| Examples                                     | ❌         |
 | CI/CD                                        | ❌         |
