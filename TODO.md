@@ -15,7 +15,9 @@
 | Custom filters                                 | ❌         |
 | Data access helpers (`.parent`, etc.)          | ✅         |
 | Data access wildcard queries (`data.*.member`) | ❌         |
+| Human-readable CLI output errors               | ❌         |
 | Readme                                         | ❌         |
 | Documentation                                  | ❌         |
 | Examples                                       | ❌         |
 | CI/CD                                          | ❌         |
+| Pypi packaging                                 | ❌         |
