@@ -13,7 +13,7 @@
 | Output to stdin                                | ❌         |
 | All of jinja2 env configs exposed to the CLI   | ❌         |
 | Custom filters                                 | ❌         |
-| Data access helpers (`.parent`, etc.)          | ❌         |
+| Data access helpers (`.parent`, etc.)          | ✅         |
 | Data access wildcard queries (`data.*.member`) | ❌         |
 | Readme                                         | ❌         |
 | Documentation                                  | ❌         |

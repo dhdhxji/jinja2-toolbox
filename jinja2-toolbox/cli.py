@@ -22,6 +22,7 @@ def main() -> None:
     ap.add_argument('datafile', help=f'Template data file path. Supported formats: {", ".join(DATA_PROVIDERS.keys())}')
     ap.add_argument('templatefile', help='Jinja2 template file path.')
     ap.add_argument('outputfile', help='Generated output file path. stdout by default')
+    ap.add_argument('--enrich', action='store_true', help='Automatically enrich the input data')
 
     args = ap.parse_args()
 
@@ -33,7 +34,8 @@ def main() -> None:
     with data_file.open() as f:
         template_context = data_provider.load(f)
 
-    template_context = wrap(template_context)
+    if args.enrich:
+        template_context = wrap(template_context)
 
     env = Environment(
         loader=FileSystemLoader('.'),
@@ -42,6 +44,8 @@ def main() -> None:
         lstrip_blocks=True,
         keep_trailing_newline=True
     )
+
+    env.filters['enrich'] = wrap
 
     template = env.get_template(str(template_file))
 
