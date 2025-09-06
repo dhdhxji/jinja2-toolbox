@@ -1,7 +1,8 @@
 import argparse
 from pathlib import Path
-from .json_provider import JsonProvider
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
+from .json_provider import JsonProvider
+from .data_proxies import wrap
 
 
 DATA_PROVIDERS = {
@@ -31,6 +32,8 @@ def main() -> None:
     data_provider = DATA_PROVIDERS[deduce_data_type(data_file, args)]()
     with data_file.open() as f:
         template_context = data_provider.load(f)
+
+    template_context = wrap(template_context)
 
     env = Environment(
         loader=FileSystemLoader('.'),
