@@ -16,10 +16,10 @@ class ListProxy(Iterable):
     parent: Union['MappingProxy', 'ListProxy']
 
     def __getitem__(self, key: Any) -> Any:
-        return self.contents[key]
+        return wrap(self.contents[key], self)
 
     def __iter__(self) -> Any:
-        yield from self.contents
+        yield from map(lambda i: wrap(i, self), self.contents)
 
     def __len__(self) -> int:
         return len(self.contents)
@@ -33,9 +33,10 @@ class MappingProxy(Mapping):
     parent: Union['MappingProxy', 'ListProxy']
 
     def __getitem__(self, key: Any) -> Any:
-        return self.contents[key]
+        return wrap(self.contents[key], self)
 
     def __iter__(self) -> Any:
+        # We iterate throuhh the keys here, so no need to wrap anything
         yield from self.contents
 
     def __len__(self) -> int:
@@ -47,29 +48,14 @@ class MappingProxy(Mapping):
 
 
 
-def _wrap(d: Any, parent: MappingProxy=None) -> Union[MappingProxy, ListProxy, PlainValueProxy]:
+def wrap(d: Any, parent: MappingProxy=None) -> Union[MappingProxy, ListProxy, PlainValueProxy]:
     t = type(d)
     if t == dict:
         # TODO: Check is key does not exit in the data
-        result = MappingProxy(None, parent)
-        result.contents = {
-            key: _wrap(value, result)
-            for key, value in d.items()
-        }
-
-        return result
+        return MappingProxy(d, parent)
     elif t == tuple or t == list:
-        result = ListProxy(None, parent)
-        result.contents = tuple((
-            _wrap(value, result)
-            for value in d
-        ))
-
-        return result
+        return ListProxy(d, parent)
     elif t == int or t == float or t == str or t == bool or d == None:
         return PlainValueProxy(d, parent)
     else:
         raise RuntimeError(f'Unsupported data type {type(d)} for wrapping')
-    
-def wrap(d: Any) -> Union[MappingProxy, PlainValueProxy]:
-    return _wrap(d, None)
