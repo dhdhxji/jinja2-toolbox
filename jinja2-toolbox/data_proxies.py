@@ -4,47 +4,67 @@ from dataclasses import dataclass
 
 @dataclass
 class PlainValueProxy:
-    value: Any
+    __value: Any
     parent: Union['MappingProxy', 'ListProxy']
 
     def __repr__(self):
-        return self.value.__repr__()
+        return self.__value.__repr__()
+    
+    def __str__(self):
+        return self.__value.__str__()
+
+    @property
+    def deplete(self):
+        return self.__value
 
 @dataclass
 class ListProxy(Iterable):
-    contents: List
+    __value: List
     parent: Union['MappingProxy', 'ListProxy']
 
     def __getitem__(self, key: Any) -> Any:
-        return wrap(self.contents[key], self)
+        return wrap(self.__value[key], self)
 
     def __iter__(self) -> Any:
-        yield from map(lambda i: wrap(i, self), self.contents)
+        yield from map(lambda i: wrap(i, self), self.__value)
 
     def __len__(self) -> int:
-        return len(self.contents)
+        return len(self.__value)
 
     def __repr__(self):
-        return str(self.contents)
+        return self.__value.__repr__()
+    
+    def __str__(self):
+        return self.__value.__str__()
+
+    @property
+    def deplete(self):
+        return self.__value
 
 @dataclass
 class MappingProxy(Mapping):
-    contents: Dict[Any, Any]
+    __value: Dict[Any, Any]
     parent: Union['MappingProxy', 'ListProxy']
 
     def __getitem__(self, key: Any) -> Any:
-        return wrap(self.contents[key], self)
+        return wrap(self.__value[key], self)
 
     def __iter__(self) -> Any:
         # We iterate throuhh the keys here, so no need to wrap anything
-        yield from self.contents
+        yield from self.__value
 
     def __len__(self) -> int:
-        return len(self.contents)
+        return len(self.__value)
 
     def __repr__(self):
-        return self.contents.__repr__()
+        return self.__value.__repr__()
     
+    def __str__(self):
+        return self.__value.__str__()
+
+    @property
+    def deplete(self):
+        return self.__value
 
 
 
