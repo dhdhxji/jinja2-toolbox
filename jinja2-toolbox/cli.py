@@ -50,9 +50,6 @@ def add_j2_cli_args(ap: argparse.ArgumentParser) -> None:
         r'``\'\n\'`` or ``\'\r\n\'``.  The default is ``\'\n\'`` which is a '
         r'useful default for Linux and OS X systems as well as web '
         r'applications.',
-        'extensions': 'List of Jinja extensions to use.  This can either be import paths '
-        'as strings or extension classes.  For more information have a '
-        'look at :ref:`the extensions documentation <jinja-extensions>`.',
         'cache_size': 'The size of the cache.  Per default this is ``400`` which means '
         'that if more than 400 templates are loaded the loader will clean '
         'out the least recently used template.  If the cache size is set to '
@@ -95,6 +92,14 @@ def add_j2_cli_args(ap: argparse.ArgumentParser) -> None:
                             action='store_true',
                             default=param.default,
                             help=true_false_params_help[name])
+        elif name == 'extensions':
+            ap.add_argument(
+                '--j2_extensions',
+                default=[],
+                nargs='+',
+                help='List of Jinja extensions to use.  This can either be import paths '
+                'as strings or extension classes.  For more information have a '
+                'look at :ref:`the extensions documentation <jinja-extensions>`.')
 
     # TODO:
     # 'undefined'
