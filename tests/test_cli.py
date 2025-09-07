@@ -102,11 +102,22 @@ test_cases = (
         expected_stdout='1True',
     ),
     Case(
-        'YAML file input',
+        'YAML .yaml file input',
         argv=[
             'template.jinja2',
             '--data', 'data.yaml',
-            '--data-format', 'yaml',
+        ],
+        files=[
+            File('data.yaml', 'foo: 123\nbar: [a, b, c]'),
+            File('template.jinja2', 'Foo={{ foo }} Bar={{ bar|join(",") }}'),
+        ],
+        expected_stdout='Foo=123 Bar=a,b,c',
+    ),
+    Case(
+        'YAML .yml file input',
+        argv=[
+            'template.jinja2',
+            '--data', 'data.yaml',
         ],
         files=[
             File('data.yaml', 'foo: 123\nbar: [a, b, c]'),
@@ -122,6 +133,44 @@ test_cases = (
             '--data-format', 'yaml',
         ],
         stdin='foo: hello\nbar: [1,2]',
+        files=[
+            File('template.jinja2', '{{ foo }}-{{ bar|sum }}'),
+        ],
+        expected_stdout='hello-3',
+    ),
+    Case(
+        'YAML from stdin',
+        argv=[
+            'template.jinja2',
+            '--data', '-',
+            '--data-format', 'yml',
+        ],
+        stdin='foo: hello\nbar: [1,2]',
+        files=[
+            File('template.jinja2', '{{ foo }}-{{ bar|sum }}'),
+        ],
+        expected_stdout='hello-3',
+    ),
+    Case(
+        'TOML file input',
+        argv=[
+            'template.jinja2',
+            '--data', 'data.toml',
+        ],
+        files=[
+            File('data.toml', 'foo = 123\nbar = ["a", "b", "c"]'),
+            File('template.jinja2', 'Foo={{ foo }} Bar={{ bar|join(",") }}'),
+        ],
+        expected_stdout='Foo=123 Bar=a,b,c',
+    ),
+    Case(
+        'TOML from stdin',
+        argv=[
+            'template.jinja2',
+            '--data', '-',
+            '--data-format', 'toml',
+        ],
+        stdin='foo = "hello"\nbar = [1,2]',
         files=[
             File('template.jinja2', '{{ foo }}-{{ bar|sum }}'),
         ],
