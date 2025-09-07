@@ -13,16 +13,19 @@ class File:
 
 @dataclass
 class Case:
+    title: str
     stdin: str = ''
     argv: list[str] = ()
     files: list[File] = ()
     expected_files: list[File] = ()
     expected_stdout: str = ''
     expected_stderr: str = ''
+    expected_exception: bool = False
 
 
 test_cases = (
     Case(
+        'Basic file-to-file rendering',        
         argv=[
             'template.jinja2',
             '--data', 'data.json',
@@ -60,6 +63,44 @@ test_cases = (
             ))),
         )
     ),
+    Case(
+        'Data from stdin, output to stdout, missing data format override',
+        argv=[
+            'template.jinja2',
+            '--data', '-',
+        ],
+        stdin='{"foo": "bar"}',
+        files=[
+            File('template.jinja2', 'Foo: {{ foo }}\n'),
+        ],
+        expected_exception=True
+    ),
+    Case(
+        'Data from stdin, output to stdout, data format override',
+        argv=[
+            'template.jinja2',
+            '--data', 'data.json',
+            '--data-format', 'json',
+        ],
+        files=[
+            File('data.json', '{"x": 42}'),
+            File('template.jinja2', '{{ x }}'),
+        ],
+        expected_stdout='42',
+    ),
+    Case(
+        'Enrich flag',
+        argv=[
+            'template.jinja2',
+            '--data', 'data.json',
+            '--enrich',
+        ],
+        files=[
+            File('data.json', '{"foo": {"bar": 1}}'),
+            File('template.jinja2', '{{ foo.bar }}{{ foo.parent is mapping }}'),
+        ],
+        expected_stdout='1True',
+    ),
 )
 
 
@@ -77,14 +118,23 @@ def test_format_template(fs: FakeFilesystem, monkeypatch, case: Case) -> None:
     for file in case.files:
         fs.create_file(file.filename, contents=file.content)
 
-    toolbox_main()
+    error = None
+    try:
+        toolbox_main()
+    except Exception as e:
+        error = e
+
+    if case.expected_exception:
+        assert error is not None
+    else:
+        assert error is None
 
     for file in case.expected_files:
         with open(file.filename) as f:
             assert f.read() == file.content
 
-    stdout_mock.seek(0)
-    assert case.expected_stdout == stdout_mock.read()
-    
     stderr_mock.seek(0)
     assert case.expected_stderr == stderr_mock.read()
+
+    stdout_mock.seek(0)
+    assert case.expected_stdout == stdout_mock.read()
