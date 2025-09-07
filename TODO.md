@@ -2,7 +2,7 @@
 | Feature                                        | Supported |
 | ---------------------------------------------- | --------- |
 | json                                           | ✅         |
-| yaml                                           | ❌         |
+| yaml                                           | ✅         |
 | toml                                           | ❌         |
 | ini                                            | ❌         |
 | Template from file                             | ✅         |
