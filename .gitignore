@@ -2,3 +2,6 @@ __pycache__
 .venv
 .mypy_cache
 examples/*/out.txt
+*.egg-info
+dist
+.pytest_cache
