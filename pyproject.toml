@@ -6,17 +6,10 @@ authors = [
     { name = "dhdhxji" }
 ]
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
     "jinja2",
     "pyyaml"
-]
-
-[project.optional-dependencies]
-test = [
-    "pytest",
-    "pytest-cov",
-    "pyfakefs"
 ]
 
 [project.scripts]
@@ -28,3 +21,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.2"
+pytest-cov = "^6.3.0"
+pyfakefs = "^5.9.3"
+
