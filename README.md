@@ -35,19 +35,19 @@ pip install git+https://github.com/dhdhxji/jinja2-toolbox.git
 Render a template with a JSON data file:
 
 ```bash
-python -m jinja2-toolbox <template.jinja2> --data <data.json> [--output <out.txt>]
+python -m jinja2_toolbox <template.jinja2> --data <data.json> [--output <out.txt>]
 ```
 
 You can tweak most Jinja2 options by adding `--j2_<option>` flags (like `--j2_trim_blocks`). See the help for more details:
 
 ```bash
-python -m jinja2-toolbox --help
+python -m jinja2_toolbox --help
 ```
 
 ### Example
 
 ```bash
-python -m jinja2-toolbox \
+python -m jinja2_toolbox \
     examples/simple-json/template.jinja2 \
     --data examples/simple-json/data.json \
     --output result.txt \
@@ -64,7 +64,7 @@ The toolbox provides a data enrichment feature that adds convenient helpers to y
 - Enable enrichment by passing the `--enrich` flag:
 
     ```bash
-    python -m jinja2-toolbox <template.jinja2> --data <data.json> --enrich
+    python -m jinja2_toolbox <template.jinja2> --data <data.json> --enrich
     ```
 
 - You can also use the `enrich` filter in your Jinja2 templates to enrich any value on demand:

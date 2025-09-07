@@ -1,7 +1,7 @@
 #!/bin/sh
 
 export export PYTHONPATH="$(pwd)/../../:$PYTHONPATH"
-python -m jinja2-toolbox \
+python -m jinja2_toolbox \
     template.jinja2 \
     --data data.yaml \
     --output out.txt \
