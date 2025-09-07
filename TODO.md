@@ -19,6 +19,7 @@
 | Human-readable CLI output errors               | ❌         |
 | Mypy compliance                                | ❌         |
 | `jinja2-toolbox`executable                     | ✅         |
+| Replace `.deplate` with filter                 | ❌         |
 | Readme                                         | ✅         |
 | Documentation                                  | ❌         |
 | Examples                                       | ❌         |

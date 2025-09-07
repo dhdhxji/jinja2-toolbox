@@ -2,6 +2,7 @@ import io
 from pyfakefs.fake_filesystem import FakeFilesystem
 from dataclasses import dataclass
 from jinja2_toolbox.cli import main as toolbox_main
+from jinja2_toolbox.data_proxies import *
 import pytest
 
 
@@ -64,11 +65,20 @@ test_cases = (
         )
     ),
     Case(
-        'Data from stdin, output to stdout, missing data format override',
+        'Invalid data file extension',
         argv=[
             'template.jinja2',
-            '--data', '-',
+            '--data', 'data.unknown',
         ],
+        files=[
+            File('template.jinja2', 'Foo: {{ foo }}\n'),
+            File('data.unknown', '{"foo": "bar"}'),
+        ],
+        expected_exception=True
+    ),
+    Case(
+        'Data from stdin, output to stdout, missing data format override',
+        argv=['template.jinja2'],
         stdin='{"foo": "bar"}',
         files=[
             File('template.jinja2', 'Foo: {{ foo }}\n'),
@@ -101,6 +111,73 @@ test_cases = (
         ],
         expected_stdout='1True',
     ),
+    Case(
+        'Depleting the enriched mapping data',
+        argv=[
+            'template.jinja2',
+            '--data', 'data.json',
+            '--enrich',
+        ],
+        files=[
+            File('data.json', '{"foo": {"bar": 1}}'),
+            File('template.jinja2', '{{ foo.bar }}{{ foo.parent.deplete is mapping }}'),
+        ],
+        expected_stdout='1True',
+    ),
+    Case(
+        'Depleting the enriched array data',
+        argv=[
+            'template.jinja2',
+            '--data-format', 'json',
+            '--enrich',
+        ],
+        stdin='{"foo": [1, 2, 3]}',
+        files=[
+            File('template.jinja2', '{{ foo.0.deplete }}{{ foo.0.parent.deplete is sequence }}'),
+        ],
+        expected_stdout='1True',
+    ),
+    Case(
+        'Enriched proxy size',
+        argv=[
+            'template.jinja2',
+            '--data-format', 'json',
+            '--enrich',
+        ],
+        stdin='{"foo": {"bar": [1, 2, 3]} }',
+        files=[
+            File('template.jinja2', '{{ foo | length }} {{ foo.bar | length }}'),
+        ],
+        expected_stdout='1 3',
+    ),
+    Case(
+        'Enriched proxy iteration',
+        argv=[
+            'template.jinja2',
+            '--data-format', 'json',
+            '--enrich',
+        ],
+        stdin='{"foo": {"bar": [1, 2, 3]} }',
+        files=[
+            File('template.jinja2', '{% for i in foo.bar %}{{ i }} {% endfor %}{% for i in foo %}{{ i }} {% endfor %}'),
+        ],
+        expected_stdout='1 2 3 bar ',
+    ),
+    Case(
+        'Enriched proxy as string',
+        argv=[
+            'template.jinja2',
+            '--data-format', 'json',
+            '--enrich',
+        ],
+        stdin='{"foo": {"bar": [1, 2, 3]} }',
+        files=[
+            File('template.jinja2', '{{foo}} {{foo.bar}}'),
+        ],
+        expected_stdout="{'bar': [1, 2, 3]} [1, 2, 3]",
+    ),
+
+    # Format support tests
     Case(
         'YAML .yaml file input',
         argv=[
@@ -213,3 +290,13 @@ def test_format_template(fs: FakeFilesystem, monkeypatch, case: Case) -> None:
 
     stdout_mock.seek(0)
     assert case.expected_stdout == stdout_mock.read()
+
+def test_data_proxy_repr():
+    value_proxy = PlainValueProxy(123, None)
+    assert repr(value_proxy) == '123'
+
+    array_proxy = ListProxy([1, 2, 3], None)
+    assert repr(array_proxy) == '[1, 2, 3]'
+
+    mapping_proxy = MappingProxy({1: 2, 3: 4}, None)
+    assert repr(mapping_proxy) == '{1: 2, 3: 4}'
