@@ -1,0 +1,29 @@
+[project]
+name = "jinja2-toolbox"
+version = "0.0.1"
+description = "A friendly CLI for rendering Jinja2 templates with JSON/YAML data, custom filters, and enrichment."
+authors = [
+    { name = "dhdhxji" }
+]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "jinja2",
+    "pyyaml"
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov"
+]
+
+[project.scripts]
+jinja2-toolbox = "jinja2_toolbox.cli:main"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
