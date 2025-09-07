@@ -3,6 +3,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from .json_provider import JsonProvider
 from .yaml_provider import YamlProvider
+from .toml_provider import TomlProvider
 from .data_proxies import wrap
 import inspect
 import sys
@@ -11,6 +12,7 @@ DATA_PROVIDERS = {
     'json': JsonProvider,
     'yml': YamlProvider,
     'yaml': YamlProvider,
+    'toml': TomlProvider,
 }
 
 
