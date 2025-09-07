@@ -4,22 +4,33 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from .json_provider import JsonProvider
 from .data_proxies import wrap
 import inspect
-from typing import Any
-
+import sys
 
 DATA_PROVIDERS = {
     'json': JsonProvider
 }
 
 
-def deduce_data_type(filename: Path, _args: argparse.Namespace) -> str:
-    extension = filename.name.split('.')[-1]
+def deduce_data_type(filename: Path, override: str) -> str:
+    if override:
+        return override
+
+    extension = Path(filename).name.split('.')[-1]
 
     if extension not in DATA_PROVIDERS.keys():
         raise RuntimeError(
             f'Can\'t determine the input data file format {str(filename)}')
     else:
         return extension
+
+
+def read_data(datapath: str, data_format: str) -> dict:
+    provider = DATA_PROVIDERS[deduce_data_type(datapath, data_format)]()
+    if datapath == '-':
+        return provider.load(sys.stdin)
+    else:
+        with Path(datapath).open() as f:
+            return provider.load(f)
 
 
 def add_j2_cli_args(ap: argparse.ArgumentParser) -> None:
@@ -98,11 +109,16 @@ def add_j2_cli_args(ap: argparse.ArgumentParser) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    ap.add_argument('template', help='Jinja2 template file path.')
     ap.add_argument(
-        'datafile', help=f'Template data file path. Supported formats: {", ".join(DATA_PROVIDERS.keys())}')
-    ap.add_argument('templatefile', help='Jinja2 template file path.')
+        '--data',
+        default='-',
+        help=f'Template data file path. Supported formats: {", ".join(DATA_PROVIDERS.keys())}. '
+        '"-" to read the data from stdin.')
+    ap.add_argument('--output', default='-',
+                    help='Generated output file path. stdout by default')
     ap.add_argument(
-        'outputfile', help='Generated output file path. stdout by default')
+        '--data-format', choices=tuple(DATA_PROVIDERS.keys()), help='Override automatically-detected data format')
     ap.add_argument('--enrich', action='store_true',
                     help='Automatically enrich the input data')
 
@@ -110,14 +126,11 @@ def main() -> None:
 
     args = ap.parse_args()
 
-    data_file: Path = Path(args.datafile)
-    template_file: Path = Path(args.templatefile)
-    output_file: Path = Path(args.outputfile)
+    if args.data == '-' and not args.data_format:
+        raise RuntimeError(
+            f'The --data-format option must be specified when reading the data from the stdin')
 
-    data_provider = DATA_PROVIDERS[deduce_data_type(data_file, args)]()
-    with data_file.open() as f:
-        template_context = data_provider.load(f)
-
+    template_context = read_data(args.data, args.data_format)
     if args.enrich:
         template_context = wrap(template_context)
 
@@ -135,7 +148,10 @@ def main() -> None:
 
     env.filters['enrich'] = wrap
 
-    template = env.get_template(str(template_file))
+    template = env.get_template(args.template)
 
-    with output_file.open('w') as f:
-        f.write(template.render(**template_context))
+    if args.output is None or args.output == '-':
+        sys.stdout.write(template.render(**template_context))
+    else:
+        with Path(args.output).open('w') as f:
+            f.write(template.render(**template_context))
