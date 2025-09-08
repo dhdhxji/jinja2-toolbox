@@ -21,12 +21,14 @@ class Case:
     expected_files: list[File] = ()
     expected_stdout: str = ''
     expected_stderr: str = ''
+
+    # TODO: Expect specific exception
     expected_exception: bool = False
 
 
 test_cases = (
     Case(
-        'Basic file-to-file rendering',        
+        'Basic file-to-file rendering',
         argv=[
             'template.jinja2',
             '--data', 'data.json',
@@ -77,6 +79,15 @@ test_cases = (
         expected_exception=True
     ),
     Case(
+        'Accessing None should raise exception',
+        argv=['template.jinja2', '--data-format', 'json'],
+        stdin='{"foo": "bar"}',
+        files=[
+            File('template.jinja2', 'Foo: {{ fooo }}\n'),
+        ],
+        expected_exception=True
+    ),
+    Case(
         'Data from stdin, output to stdout, missing data format override',
         argv=['template.jinja2'],
         stdin='{"foo": "bar"}',
@@ -107,7 +118,8 @@ test_cases = (
         ],
         files=[
             File('data.json', '{"foo": {"bar": 1}}'),
-            File('template.jinja2', '{{ foo.bar }}{{ foo.parent is mapping }}'),
+            File('template.jinja2',
+                 '{{ foo.bar }}{{ foo.parent is mapping }}'),
         ],
         expected_stdout='1True',
     ),
@@ -120,7 +132,8 @@ test_cases = (
         ],
         files=[
             File('data.json', '{"foo": {"bar": 1}}'),
-            File('template.jinja2', '{{ foo.bar }}{{ foo.parent.deplete is mapping }}'),
+            File('template.jinja2',
+                 '{{ foo.bar }}{{ foo.parent.depleted is mapping }}'),
         ],
         expected_stdout='1True',
     ),
@@ -133,7 +146,8 @@ test_cases = (
         ],
         stdin='{"foo": [1, 2, 3]}',
         files=[
-            File('template.jinja2', '{{ foo.0.deplete }}{{ foo.0.parent.deplete is sequence }}'),
+            File('template.jinja2',
+                 '{{ foo.0.depleted }}{{ foo.0.parent.depleted is sequence }}'),
         ],
         expected_stdout='1True',
     ),
@@ -146,7 +160,8 @@ test_cases = (
         ],
         stdin='{"foo": {"bar": [1, 2, 3]} }',
         files=[
-            File('template.jinja2', '{{ foo | length }} {{ foo.bar | length }}'),
+            File('template.jinja2',
+                 '{{ foo | length }} {{ foo.bar | length }}'),
         ],
         expected_stdout='1 3',
     ),
@@ -159,7 +174,8 @@ test_cases = (
         ],
         stdin='{"foo": {"bar": [1, 2, 3]} }',
         files=[
-            File('template.jinja2', '{% for i in foo.bar %}{{ i }} {% endfor %}{% for i in foo %}{{ i }} {% endfor %}'),
+            File('template.jinja2',
+                 '{% for i in foo.bar %}{{ i }} {% endfor %}{% for i in foo %}{{ i }} {% endfor %}'),
         ],
         expected_stdout='1 2 3 bar ',
     ),
@@ -175,6 +191,150 @@ test_cases = (
             File('template.jinja2', '{{foo}} {{foo.bar}}'),
         ],
         expected_stdout="{'bar': [1, 2, 3]} [1, 2, 3]",
+    ),
+    Case(
+        'Proxy mapping is recognised as mapping',
+        argv=[
+            'template.jinja2',
+            '--data-format', 'json',
+            '--enrich',
+        ],
+        stdin='{"foo": {"bar": [1, 2, 3]} }',
+        files=[
+            File('template.jinja2', '{{foo is mapping}}'),
+        ],
+        expected_stdout="True",
+    ),
+    Case(
+        'Proxy iterable is recognised as iterable',
+        argv=[
+            'template.jinja2',
+            '--data-format', 'json',
+            '--enrich',
+        ],
+        stdin='{"foo": [1, 2, 3] }',
+        files=[
+            File('template.jinja2', '{{foo is sequence}}'),
+        ],
+        expected_stdout="True",
+    ),
+    Case(
+        'Accessing proxy mapping parent',
+        argv=[
+            'template.jinja2',
+            '--data-format', 'json',
+            '--enrich',
+        ],
+        stdin='{"foo": {"bar": [1, 2, 3]} }',
+        files=[
+            File('template.jinja2', '{{foo.parent}}'),
+        ],
+        expected_stdout='{\'foo\': {\'bar\': [1, 2, 3]}}',
+    ),
+    Case(
+        'Accessing proxy list parent',
+        argv=[
+            'template.jinja2',
+            '--data-format', 'json',
+            '--enrich',
+        ],
+        stdin='{"foo": {"bar": [1, 2, 3]} }',
+        files=[
+            File('template.jinja2', '{{foo.bar.parent}}'),
+        ],
+        expected_stdout='{\'bar\': [1, 2, 3]}',
+    ),
+    Case(
+        'Accessing proxy plain value parent',
+        argv=[
+            'template.jinja2',
+            '--data-format', 'json',
+            '--enrich',
+        ],
+        stdin='{"foo": {"bar": [1, 2, 3]} }',
+        files=[
+            File('template.jinja2', '{{foo.bar.0.parent}}'),
+        ],
+        expected_stdout='[1, 2, 3]',
+    ),
+
+
+    Case(
+        'Accessing proxy mapping member',
+        argv=[
+            'template.jinja2',
+            '--data-format', 'json',
+            '--enrich',
+        ],
+        stdin='{"foo": {"bar": [1, 2, 3]} }',
+        files=[
+            File('template.jinja2', '{{foo.bar}}'),
+        ],
+        expected_stdout='[1, 2, 3]',
+    ),
+    Case(
+        'Accessing proxy list member',
+        argv=[
+            'template.jinja2',
+            '--data-format', 'json',
+            '--enrich',
+        ],
+        stdin='{"foo": {"bar": [1, 2, 3]} }',
+        files=[
+            File('template.jinja2', '{{foo.bar | length}}'),
+        ],
+        expected_stdout='3',
+    ),
+    Case(
+        'Accessing proxy plain value member',
+        argv=[
+            'template.jinja2',
+            '--data-format', 'json',
+            '--enrich',
+        ],
+        stdin='{"foo": "bar"}',
+        files=[
+            File('template.jinja2', '{{foo | length}}'),
+        ],
+        expected_stdout='3',
+    ),
+    Case(
+        'Private rich proxy values must not be accessed',
+        argv=[
+            'template.jinja2',
+            '--data-format', 'json',
+            '--enrich',
+        ],
+        stdin='{"foo": "bar"}',
+        files=[
+            File('template.jinja2', '{{foo.value}}'),
+        ],
+        expected_exception=True
+    ),
+    Case(
+        'Deplete filter should not work on non-proxy values',
+        argv=[
+            'template.jinja2',
+            '--data-format', 'json',
+        ],
+        stdin='{"foo": "bar"}',
+        files=[
+            File('template.jinja2', '{{foo | deplete}}'),
+        ],
+        expected_exception=True
+    ),
+    Case(
+        'Check rich proxy value equivalence',
+        argv=[
+            'template.jinja2',
+            '--data-format', 'json',
+            '--enrich',
+        ],
+        stdin='{"foo": "bar"}',
+        files=[
+            File('template.jinja2', '{{foo | deplete == foo}}'),
+        ],
+        expected_stdout="True",
     ),
 
     # Format support tests
@@ -256,7 +416,7 @@ test_cases = (
 )
 
 
-@pytest.mark.parametrize('case', test_cases)
+@pytest.mark.parametrize('case', test_cases, ids=map(lambda c: c.title, test_cases))
 def test_format_template(fs: FakeFilesystem, monkeypatch, case: Case) -> None:
     stdout_mock = io.StringIO()
     stderr_mock = io.StringIO()
@@ -291,12 +451,25 @@ def test_format_template(fs: FakeFilesystem, monkeypatch, case: Case) -> None:
     stdout_mock.seek(0)
     assert case.expected_stdout == stdout_mock.read()
 
+
 def test_data_proxy_repr():
-    value_proxy = PlainValueProxy(123, None)
+    value_proxy = enrich(123, None)
     assert repr(value_proxy) == '123'
 
-    array_proxy = ListProxy([1, 2, 3], None)
+    array_proxy = enrich([1, 2, 3], None)
     assert repr(array_proxy) == '[1, 2, 3]'
 
-    mapping_proxy = MappingProxy({1: 2, 3: 4}, None)
+    mapping_proxy = enrich({1: 2, 3: 4}, None)
     assert repr(mapping_proxy) == '{1: 2, 3: 4}'
+
+
+def test_double_proxy():
+    value_proxy = enrich(123, None)
+    value_proxy = enrich(value_proxy)
+    assert type(deplete(value_proxy)) is int
+
+
+def test_enrich_unsupported_type():
+    with pytest.raises(RuntimeError) as e_info:
+        enrich(io.StringIO())
+    assert e_info.value.args[0] == f'Unsupported data type {type(io.StringIO())} for wrapping'

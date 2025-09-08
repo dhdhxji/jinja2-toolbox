@@ -4,7 +4,7 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from .json_provider import JsonProvider
 from .yaml_provider import YamlProvider
 from .toml_provider import TomlProvider
-from .data_proxies import wrap
+from .data_proxies import enrich, deplete
 import inspect
 import sys
 
@@ -142,7 +142,7 @@ def main() -> None:
 
     template_context = read_data(args.data, args.data_format)
     if args.enrich:
-        template_context = wrap(template_context)
+        template_context = enrich(template_context)
 
     j2_args = {
         key.lstrip('j2_'): value
@@ -156,7 +156,8 @@ def main() -> None:
         **j2_args
     )
 
-    env.filters['enrich'] = wrap
+    env.filters['enrich'] = enrich
+    env.filters['deplete'] = deplete
 
     template = env.get_template(args.template)
 

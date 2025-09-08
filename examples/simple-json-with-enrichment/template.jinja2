@@ -2,10 +2,10 @@ Title is {{ title }}
 
 Array values:
 {% for i in property_array %}
- - {{ i }} Test parent: {{ i.parent.parent.title }} {{ i.parent.parent.deplete.parent.asdf }}
+ - {{ i }} Test parent: {{ i.parent.parent.title }} {{ i.parent.parent.depleted.parent.asdf }}
  - {{ i }} Test parent: {{ i.parent.parent.title }} {{ i.parent.parent['parent'].asdf }}
 {% endfor %}
 
-{% for i in (property_array.deplete | enrich) %}
+{% for i in (property_array.depleted | enrich) %}
  - {{ i }} Test parent: {{ i.parent.1 }} {{ i.parent.2 }}
 {% endfor %}

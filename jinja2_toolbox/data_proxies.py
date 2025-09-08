@@ -1,81 +1,77 @@
-from typing import Any, Dict, Union, List
-from collections.abc import Mapping, Iterable
-from dataclasses import dataclass
-
-@dataclass
-class PlainValueProxy:
-    __value: Any
-    parent: Union['MappingProxy', 'ListProxy']
-
-    def __repr__(self):
-        return self.__value.__repr__()
-    
-    def __str__(self):
-        return self.__value.__str__()
-
-    @property
-    def deplete(self):
-        return self.__value
-
-@dataclass
-class ListProxy(Iterable):
-    __value: List
-    parent: Union['MappingProxy', 'ListProxy']
-
-    def __getitem__(self, key: Any) -> Any:
-        return wrap(self.__value[key], self)
-
-    def __iter__(self) -> Any:
-        yield from map(lambda i: wrap(i, self), self.__value)
-
-    def __len__(self) -> int:
-        return len(self.__value)
-
-    def __repr__(self):
-        return self.__value.__repr__()
-    
-    def __str__(self):
-        return self.__value.__str__()
-
-    @property
-    def deplete(self):
-        return self.__value
-
-@dataclass
-class MappingProxy(Mapping):
-    __value: Dict[Any, Any]
-    parent: Union['MappingProxy', 'ListProxy']
-
-    def __getitem__(self, key: Any) -> Any:
-        return wrap(self.__value[key], self)
-
-    def __iter__(self) -> Any:
-        # We iterate throuhh the keys here, so no need to wrap anything
-        yield from self.__value
-
-    def __len__(self) -> int:
-        return len(self.__value)
-
-    def __repr__(self):
-        return self.__value.__repr__()
-    
-    def __str__(self):
-        return self.__value.__str__()
-
-    @property
-    def deplete(self):
-        return self.__value
+from typing import Any, Union
+from collections.abc import Mapping, Sequence
+import typing
+import inspect
 
 
+def wrap_type_into_rich_proxy(
+        cls: typing.Type,
+        bases: typing.Iterable[typing.Type] = tuple(),
+        overrides: dict[str, typing.Callable] = {}) -> typing.Type:
+    def __init__(self, value: Any, parent: Any) -> None:
+        object.__setattr__(self, 'value', value)
+        object.__setattr__(self, 'parent', parent)
 
-def wrap(d: Any, parent: MappingProxy=None) -> Union[MappingProxy, ListProxy, PlainValueProxy]:
+    def __getattribute__(self, name):
+        if name == 'parent':
+            return object.__getattribute__(self, 'parent')
+        elif name == 'depleted':
+            return object.__getattribute__(self, 'value')
+        else:
+            # TODO: Try to enrich here?
+            return object.__getattribute__(self, 'value').__getattribute__(name)
+
+    static_attrs = {
+        '__init__': __init__,
+        '__getattribute__': __getattribute__,
+        **overrides
+    }
+
+    attr_whitelist = tuple((
+        '__add__', '__contains__', '__delattr__', '__doc__', '__eq__',
+        '__format__', '__ge__', '__getitem__', '__getslice__', '__gt__',
+        '__hash__', '__le__', '__len__', '__lt__', '__mod__', '__mul__',
+        '__ne__', '__reduce__', '__reduce_ex__', '__repr__', '__rmod__',
+        '__rmul__', '__setattr__', '__str__', '__iter__'
+    ))
+
+    # TODO: Test out are functions accessible from jinja?
+    def forward_call(name) -> Any:
+        def call(self, *args, **kwargs) -> Any:
+            return object.__getattribute__(self, 'value').__getattribute__(name)(*args, **kwargs)
+
+        return call
+
+    dynamic_attrs = {
+        name: forward_call(name)
+        for name, _func in inspect.getmembers(cls, inspect.isroutine)
+        if name not in static_attrs
+        if name in attr_whitelist
+    }
+
+    return type(f'_JinjaToolboxRichProxy_{cls.__name__}', (bases), {
+        **static_attrs,
+        **dynamic_attrs,
+    })
+
+
+def enrich(d: Any, parent: Any = None) -> Any:
     t = type(d)
-    if t == dict:
-        # TODO: Check is key does not exit in the data
-        return MappingProxy(d, parent)
-    elif t == tuple or t == list:
-        return ListProxy(d, parent)
-    elif t == int or t == float or t == str or t == bool or d == None:
-        return PlainValueProxy(d, parent)
+    if t.__name__.startswith('_JinjaToolboxRichProxy'):
+        return d
+    elif isinstance(d, Mapping):
+        return wrap_type_into_rich_proxy(t, bases=(Mapping,), overrides={
+            '__getitem__': lambda self, key: enrich(object.__getattribute__(self, 'value')[key], self),
+        })(d, parent)
+    elif isinstance(d, Sequence):
+        return wrap_type_into_rich_proxy(t, bases=(Sequence,), overrides={
+            '__getitem__': lambda self, key: enrich(object.__getattribute__(self, 'value')[key], self),
+        })(d, parent)
+    elif isinstance(d, (int, float, str, bool)):
+        return wrap_type_into_rich_proxy(t)(d, parent)
     else:
         raise RuntimeError(f'Unsupported data type {type(d)} for wrapping')
+
+
+def deplete(d: Any) -> Union[map, tuple, list, int, float, str]:
+    return d.depleted
