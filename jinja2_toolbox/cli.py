@@ -131,6 +131,7 @@ def main() -> None:
         '--data-format', choices=tuple(DATA_PROVIDERS.keys()), help='Override automatically-detected data format')
     ap.add_argument('--enrich', action='store_true',
                     help='Automatically enrich the input data')
+    ap.add_argument('--template-dir', default='.', help='Path to the templates root directory')
 
     add_j2_cli_args(ap)
 
@@ -139,6 +140,9 @@ def main() -> None:
     if args.data == '-' and not args.data_format:
         raise RuntimeError(
             f'The --data-format option must be specified when reading the data from the stdin')
+
+    if not Path(args.template_dir).exists() or not Path(args.template_dir).is_dir():
+        raise RuntimeError(f'Invalid template directory {args.template_dir}')
 
     template_context = read_data(args.data, args.data_format)
     if args.enrich:
@@ -151,7 +155,7 @@ def main() -> None:
     }
 
     env = Environment(
-        loader=FileSystemLoader('.'),
+        loader=FileSystemLoader(args.template_dir),
         undefined=StrictUndefined,
         **j2_args
     )

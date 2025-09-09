@@ -336,6 +336,45 @@ test_cases = (
         ],
         expected_stdout="True",
     ),
+    Case(
+        'Custom template dir',
+        argv=[
+            'template.jinja2',
+            '--template-dir', '/some/non/standard/path/',
+            '--data-format', 'json',
+        ],
+        stdin='{"foo": "bar"}',
+        files=[
+            File('/some/non/standard/path/template.jinja2', '{{foo}}'),
+        ],
+        expected_stdout="bar",
+    ),
+    Case(
+        'Non-existent custom template dir',
+        argv=[
+            'template.jinja2',
+            '--template-dir', '/some/non/existing/path/',
+            '--data-format', 'json',
+        ],
+        stdin='{"foo": "bar"}',
+        files=[
+            File('/some/non/standard/path/template.jinja2', '{{foo}}'),
+        ],
+        expected_exception=True
+    ),
+    Case(
+        'Non-dir custom template dir',
+        argv=[
+            'template.jinja2',
+            '--template-dir', '/some/non/existing/path/',
+            '--data-format', 'json',
+        ],
+        stdin='{"foo": "bar"}',
+        files=[
+            File('/some/non/existing/path', '{{foo}}'),
+        ],
+        expected_exception=True
+    ),
 
     # Format support tests
     Case(
